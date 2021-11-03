@@ -4,9 +4,9 @@ import android.graphics.Bitmap
 import java.io.File
 import java.util.ArrayList
 
-class StartEncoderUseCase(private val videoEncoder: VideoEncoder)  {
+class StartEncoderUseCase(private val videoEncoder: VideoEncoder) {
 
-    fun startEncoder(bitmapList: ArrayList<Bitmap>){
-        videoEncoder.startEncoder(bitmapList)
+    fun startEncoder(bitmapList: ArrayList<Bitmap>, file: File) {
+        videoEncoder.startEncoder(bitmapList, file)
     }
 }

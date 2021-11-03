@@ -101,12 +101,20 @@ class BitmapToVideoEncoder(callback: IBitmapToVideoEncoderCallback) {
             return
         }
         Log.d(TAG, "Queueing frame")
-        mEncodeQueue.add(bitmap)
+        mEncodeQueue.add(bitmapScale(bitmap!!))
         synchronized(mFrameSync) {
             if (mNewFrameLatch != null && mNewFrameLatch!!.count > 0) {
                 mNewFrameLatch!!.countDown()
             }
         }
+    }
+
+    private fun bitmapScale(bitmap: Bitmap): Bitmap {
+        return Bitmap.createScaledBitmap(
+            bitmap,
+            1080,
+            1920,
+            false)
     }
 
     private fun encode() {

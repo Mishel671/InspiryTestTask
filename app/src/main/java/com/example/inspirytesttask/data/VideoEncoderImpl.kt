@@ -16,57 +16,50 @@ import androidx.core.content.FileProvider
 import androidx.core.content.ContextCompat.startActivity
 
 import android.content.Intent
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.content.ContextCompat.getExternalFilesDirs
 import com.example.inspirytesttask.BuildConfig
+import androidx.core.app.ActivityCompat.startActivityForResult
+import com.example.inspirytesttask.presentation.MainActivity
+import androidx.core.content.ContextCompat.startActivity
+
+
+
+
+
+
 
 
 class VideoEncoderImpl(
     private val context: Context,
 ) : VideoEncoder {
-
     private val coroutineScope = CoroutineScope(Dispatchers.Main)
 
-    override fun startEncoder(bitmapList: ArrayList<Bitmap>) {
+
+    override fun startEncoder(bitmapList: ArrayList<Bitmap>, file: File) {
         val bitmapToVideoEncoder = BitmapToVideoEncoder(
             object : BitmapToVideoEncoder.IBitmapToVideoEncoderCallback {
                 override fun onEncodingComplete(outputFile: File?) {
                     coroutineScope.launch {
-                        Toast.makeText(
-                            context,
-                            "Encoding complete!",
-                            Toast.LENGTH_LONG
-                        ).show()
-                        val videoFile = File(Environment
-                            .getExternalStoragePublicDirectory(
-                                Environment.DIRECTORY_DCIM
-                            ).toString() + "/muxedAudioVideo.mp4")
-                        val fileUri: Uri = FileProvider.getUriForFile(context,
-                            BuildConfig.APPLICATION_ID + ".provider", ///storage/emulated/0/DCIM/
-                            videoFile)
-                        val intent = Intent(Intent.ACTION_VIEW)
-                        intent.setDataAndType(fileUri, "video/mp4")
-                        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION) //DO NOT FORGET THIS EVER
+
+                        val videoURI = FileProvider.getUriForFile(context,
+                            context.applicationContext.packageName + ".provider",
+                            file)
+                        val intent = Intent()
+                        intent.action = Intent.ACTION_VIEW
+                        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        intent.setDataAndType(videoURI, "video/mp4")
                         context.startActivity(intent)
                     }
                 }
             })
-        val fileName = "/muxedAudioVideo.mp4"
-        val file = File(
-            Environment
-                .getExternalStoragePublicDirectory(
-                    Environment.DIRECTORY_DCIM
-                ).toString() + fileName
-        )
         bitmapToVideoEncoder.startEncoding(file)
-        var bitmapScaled: Bitmap
         for (bitmap in bitmapList) {
-            bitmapScaled = Bitmap.createScaledBitmap(
-                bitmap,
-                1080,
-                1920,
-                false)
-            bitmapToVideoEncoder.queueFrame(bitmapScaled)
+            bitmapToVideoEncoder.queueFrame(bitmap)
         }
         bitmapToVideoEncoder.stopEncoding()
     }
+
+
 }

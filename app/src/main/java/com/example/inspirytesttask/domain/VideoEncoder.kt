@@ -6,5 +6,5 @@ import java.util.ArrayList
 
 interface VideoEncoder {
 
-    fun startEncoder(bitmapList: ArrayList<Bitmap>)
+    fun startEncoder(bitmapList: ArrayList<Bitmap>, file:File)
 }
