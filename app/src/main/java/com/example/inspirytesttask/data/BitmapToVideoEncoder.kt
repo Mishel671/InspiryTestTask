@@ -195,6 +195,7 @@ class BitmapToVideoEncoder(callback: IBitmapToVideoEncoderCallback) {
         val yuv = ByteArray(inputWidth * inputHeight * 3 / 2)
         encodeYUV420SP(yuv, argb, inputWidth, inputHeight)
         scaled.recycle()
+
         return yuv
     }
 

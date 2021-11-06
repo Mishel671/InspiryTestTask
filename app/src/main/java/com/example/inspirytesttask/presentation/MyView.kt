@@ -23,6 +23,7 @@ import android.graphics.BitmapFactory
 import android.os.Build
 import androidx.core.graphics.applyCanvas
 import androidx.core.graphics.scale
+import kotlinx.coroutines.android.awaitFrame
 import java.io.FileInputStream
 import java.io.FileNotFoundException
 
@@ -93,7 +94,7 @@ class MyView @JvmOverloads constructor(
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         drawCanvas(canvas, false)
-        invalidate()
+        postInvalidateDelayed(25)
     }
 
     private fun drawCanvas(canvas: Canvas, drawToBitmap: Boolean) {
