@@ -6,7 +6,7 @@ import java.util.ArrayList
 
 class StartEncoderUseCase(private val videoEncoder: VideoEncoder) {
 
-    fun startEncoder(bitmapList: ArrayList<Bitmap>, file: File) {
-        videoEncoder.startEncoder(bitmapList, file)
+    fun startEncoder(file: File) {
+        videoEncoder.startEncoder(file)
     }
 }

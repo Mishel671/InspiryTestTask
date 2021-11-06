@@ -23,22 +23,17 @@ import com.example.inspirytesttask.BuildConfig
 import androidx.core.app.ActivityCompat.startActivityForResult
 import com.example.inspirytesttask.presentation.MainActivity
 import androidx.core.content.ContextCompat.startActivity
-
-
-
-
-
-
-
+import kotlinx.coroutines.cancel
 
 class VideoEncoderImpl(
     private val context: Context,
 ) : VideoEncoder {
-    private val coroutineScope = CoroutineScope(Dispatchers.Main)
+    private val coroutineScope = CoroutineScope(Dispatchers.IO)
 
+    private var bitmapToVideoEncoder: BitmapToVideoEncoder? = null
 
-    override fun startEncoder(bitmapList: ArrayList<Bitmap>, file: File) {
-        val bitmapToVideoEncoder = BitmapToVideoEncoder(
+    override fun startEncoder(file: File) {
+        bitmapToVideoEncoder = BitmapToVideoEncoder(
             object : BitmapToVideoEncoder.IBitmapToVideoEncoderCallback {
                 override fun onEncodingComplete(outputFile: File?) {
                     coroutineScope.launch {
@@ -51,15 +46,18 @@ class VideoEncoderImpl(
                         intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                         intent.setDataAndType(videoURI, "video/mp4")
                         context.startActivity(intent)
+                        cancel()
                     }
                 }
             })
-        bitmapToVideoEncoder.startEncoding(file)
-        for (bitmap in bitmapList) {
-            bitmapToVideoEncoder.queueFrame(bitmap)
-        }
-        bitmapToVideoEncoder.stopEncoding()
+        bitmapToVideoEncoder?.startEncoding(file)
     }
 
+    override fun setBitmap(bitmap: Bitmap) {
+        bitmapToVideoEncoder?.queueFrame(bitmap)
+    }
 
+    override fun stopEncoder() {
+        bitmapToVideoEncoder?.stopEncoding()
+    }
 }

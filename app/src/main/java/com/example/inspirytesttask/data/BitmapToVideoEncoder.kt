@@ -30,7 +30,7 @@ class BitmapToVideoEncoder(callback: IBitmapToVideoEncoderCallback) {
 
     private var mCallback: IBitmapToVideoEncoderCallback = callback
 
-    private val coroutineScope = CoroutineScope(Dispatchers.IO)
+    private val coroutineScope = CoroutineScope(Dispatchers.Default)
 
     interface IBitmapToVideoEncoderCallback {
         fun onEncodingComplete(outputFile: File?)
@@ -101,20 +101,12 @@ class BitmapToVideoEncoder(callback: IBitmapToVideoEncoderCallback) {
             return
         }
         Log.d(TAG, "Queueing frame")
-        mEncodeQueue.add(bitmapScale(bitmap!!))
+        mEncodeQueue.add(bitmap)
         synchronized(mFrameSync) {
             if (mNewFrameLatch != null && mNewFrameLatch!!.count > 0) {
                 mNewFrameLatch!!.countDown()
             }
         }
-    }
-
-    private fun bitmapScale(bitmap: Bitmap): Bitmap {
-        return Bitmap.createScaledBitmap(
-            bitmap,
-            1080,
-            1920,
-            false)
     }
 
     private fun encode() {
@@ -181,6 +173,7 @@ class BitmapToVideoEncoder(callback: IBitmapToVideoEncoderCallback) {
     }
 
     private fun release() {
+        coroutineScope.cancel()
         if (mediaCodec != null) {
             mediaCodec!!.stop()
             mediaCodec!!.release()
@@ -192,7 +185,6 @@ class BitmapToVideoEncoder(callback: IBitmapToVideoEncoderCallback) {
             mediaMuxer!!.release()
             mediaMuxer = null
             Log.d(TAG, "RELEASE MUXER")
-            coroutineScope.cancel()
 
         }
     }

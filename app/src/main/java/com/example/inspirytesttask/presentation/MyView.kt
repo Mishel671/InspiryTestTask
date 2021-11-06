@@ -15,9 +15,16 @@ import android.widget.Toast
 import com.example.inspirytesttask.data.BitmapToVideoEncoder
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import java.io.File
 import java.util.ArrayList
+import android.graphics.BitmapFactory
+import androidx.core.graphics.applyCanvas
+import androidx.core.graphics.scale
+import java.io.FileInputStream
+import java.io.FileNotFoundException
+
 
 class MyView @JvmOverloads constructor(
     context: Context,
@@ -26,18 +33,17 @@ class MyView @JvmOverloads constructor(
 ) : View(context, attrs, defStyleAttr) {
 
     private lateinit var bitmap: Bitmap
-    private lateinit var canvasBitmap: Canvas
     private var dispWidth: Int = 0
     private var dispHeight: Int = 0
+
     private var start = 1
     private var move = 1
-    private var countRecordedFrame = -1
-    private var needRecordFrame = 0
-    private var startRecord = false
-    private val bitmapList: ArrayList<Bitmap> = ArrayList()
 
-    var bitmapListReady: ((ArrayList<Bitmap>) -> Unit)? = null
+    private var startForRecord: Int = 0
+    private var moveForRecord: Int = 0
 
+
+    private val coroutineScope = CoroutineScope(Dispatchers.IO)
 
     private val paint = Paint().apply {
         color = Color.BLACK
@@ -45,86 +51,74 @@ class MyView @JvmOverloads constructor(
         isAntiAlias = true
     }
     private val text = "Hello World"
-    private var endText = start + paint.measureText(text)
+    private val textWidth = paint.measureText(text)
 
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         super.onSizeChanged(w, h, oldw, oldh)
-
         dispWidth = w
         dispHeight = h
         bitmap = Bitmap.createBitmap(dispWidth, dispHeight, Bitmap.Config.ARGB_8888)
-        canvasBitmap = Canvas(bitmap)
         move = ((dispWidth / 20) - (paint.measureText(text).toInt() / 20)) / 2
         Log.d("MyLog", "$dispWidth & $move")
+
     }
+
+    override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
+        super.onLayout(changed, left, top, right, bottom)
+        Log.d("MyLog", "onLayout")
+        MainActivity.bitmapRecordStart = { frameCount ->
+            coroutineScope.launch {
+
+                startForRecord = start
+                moveForRecord = move
+                for (i in 1..frameCount) {
+                    bitmap.applyCanvas {
+                        drawCanvas(this, true)
+                    }
+                    bitmapReady?.invoke(bitmap.scale(1080, 1920))
+                }
+                bitmap.recycle()
+                stopEncoder?.invoke()
+            }
+        }
+    }
+
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
-        drawCanvas(canvas)
-        if (countRecordedFrame < needRecordFrame && startRecord) {
-            drawCanvas(canvasBitmap)
-            bitmapList.add(bitmap.copy(bitmap.config, false))
-            countRecordedFrame++
-        } else if (countRecordedFrame >= needRecordFrame && startRecord) {
-            startRecord = false
-            bitmapListReady?.invoke(bitmapList)
-
-        }
+        drawCanvas(canvas, false)
         invalidate()
-        if (endText.toInt() >= dispWidth) {
-            move *= -1
-        } else if (start <= 0) {
-            move *= -1
-        }
-        start += move
-        endText = start + paint.measureText(text)
     }
 
-
-    fun setRecordOptions(countFrame: Int, start: Boolean) {
-        startRecord = start
-        needRecordFrame = countFrame
-        countRecordedFrame = 0
-    }
-
-    private fun drawCanvas(canvas: Canvas) {
+    private fun drawCanvas(canvas: Canvas, drawToBitmap: Boolean) {
         canvas.drawColor(Color.parseColor("#DADADA"))
-        canvas.drawText(text, start.toFloat(), (dispHeight / 2).toFloat(), paint)
-    }
+        if(drawToBitmap) {
+            canvas.drawText(text, startForRecord.toFloat(), (dispHeight / 2).toFloat(), paint)
+            if (startForRecord + textWidth >= bitmap!!.width) {
+                moveForRecord *= -1
+            } else if (startForRecord <= 0) {
+                moveForRecord *= -1
+            }
+            startForRecord += moveForRecord
 
-    private fun startEncoder() {
+        } else {
+            canvas.drawText(text, start.toFloat(), (dispHeight / 2).toFloat(), paint)
+            if (start + textWidth >= dispWidth) {
+                move *= -1
+            } else if (start <= 0) {
+                move *= -1
+            }
+            start += move
 
-        val bitmapToVideoEncoder = BitmapToVideoEncoder(
-            object : BitmapToVideoEncoder.IBitmapToVideoEncoderCallback {
-                override fun onEncodingComplete(outputFile: File?) {
-                    Handler(Looper.getMainLooper()).post {
-                        Toast.makeText(
-                            context,
-                            "Encoding complete!",
-                            Toast.LENGTH_LONG
-                        ).show()
-                    }
-                }
-            })
-        val fileName = "/muxedAudioVideo.mp4"
-        val file = File(
-            Environment
-                .getExternalStoragePublicDirectory(
-                    Environment.DIRECTORY_DCIM
-                ).toString() + fileName
-        )
-        bitmapToVideoEncoder.startEncoding(file)
-        var bitmapScaled: Bitmap
-        for (bitmap in bitmapList) {
-            bitmapScaled = Bitmap.createScaledBitmap(
-                bitmap,
-                1080,
-                1920,
-                false)
-            bitmapToVideoEncoder.queueFrame(bitmapScaled)
         }
-        bitmapToVideoEncoder.stopEncoding()
     }
 
+
+
+
+    companion object {
+        var bitmapReady: ((Bitmap) -> Unit)? = null
+        var stopEncoder: (() -> Unit)? = null
+    }
 }
