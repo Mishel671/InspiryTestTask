@@ -20,6 +20,7 @@ import kotlinx.coroutines.launch
 import java.io.File
 import java.util.ArrayList
 import android.graphics.BitmapFactory
+import android.os.Build
 import androidx.core.graphics.applyCanvas
 import androidx.core.graphics.scale
 import java.io.FileInputStream
@@ -43,7 +44,7 @@ class MyView @JvmOverloads constructor(
     private var moveForRecord: Int = 0
 
 
-    private val coroutineScope = CoroutineScope(Dispatchers.IO)
+    private val coroutineScope = CoroutineScope(Dispatchers.Default)
 
     private val paint = Paint().apply {
         color = Color.BLACK
@@ -58,7 +59,11 @@ class MyView @JvmOverloads constructor(
         super.onSizeChanged(w, h, oldw, oldh)
         dispWidth = w
         dispHeight = h
-        bitmap = Bitmap.createBitmap(dispWidth, dispHeight, Bitmap.Config.ARGB_8888)
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O){
+            bitmap = Bitmap.createBitmap(dispWidth, dispHeight, Bitmap.Config.ARGB_8888)
+        } else {
+            bitmap = Bitmap.createBitmap(dispWidth, dispHeight, Bitmap.Config.RGB_565)
+        }
         move = ((dispWidth / 20) - (paint.measureText(text).toInt() / 20)) / 2
         Log.d("MyLog", "$dispWidth & $move")
 
