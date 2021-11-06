@@ -28,7 +28,7 @@ import kotlinx.coroutines.cancel
 class VideoEncoderImpl(
     private val context: Context,
 ) : VideoEncoder {
-    private val coroutineScope = CoroutineScope(Dispatchers.IO)
+    private val coroutineScope = CoroutineScope(Dispatchers.Main)
 
     private var bitmapToVideoEncoder: BitmapToVideoEncoder? = null
 
